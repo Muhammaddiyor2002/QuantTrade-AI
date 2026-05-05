@@ -35,3 +35,17 @@ def test_backtest_endpoint() -> None:
     body = r.json()
     assert "metrics" in body
     assert "final_equity" in body
+
+
+def test_predict_endpoint_serializes_train_report() -> None:
+    """Regression test: TrainReport is a slots dataclass and must be
+    serialized via dataclasses.asdict, not __dict__."""
+    r = client.post(
+        "/predict",
+        json={"symbol": "BTC/USDT", "timeframe": "1h", "limit": 400, "horizon": 1},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "report" in body
+    for key in ("accuracy", "auc", "logloss", "n_samples", "n_features", "folds"):
+        assert key in body["report"]

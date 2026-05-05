@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -107,7 +108,7 @@ def predict(req: AIRequest) -> dict[str, Any]:
     df = fetch_ohlcv(req.symbol, req.timeframe, req.limit)
     _, report, pred = train_and_predict(df, horizon=req.horizon)
     return {
-        "report": report.__dict__,
+        "report": asdict(report),
         "last_proba_up": float(pred.proba.iloc[-1]),
         "last_signal": int(pred.signal.iloc[-1]),
     }

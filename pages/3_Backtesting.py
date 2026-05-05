@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 import pandas as pd
 import streamlit as st
 
@@ -47,7 +49,7 @@ c4.metric("Win rate", f"{result.metrics.win_rate:.2%}")
 
 st.plotly_chart(equity_chart(result.equity, title=f"{symbol} {strategy}"), use_container_width=True)
 
-trades_df = pd.DataFrame([t.__dict__ for t in result.trades])
+trades_df = pd.DataFrame([asdict(t) for t in result.trades])
 st.plotly_chart(
     candlestick_chart(df, title="Trades", trades=trades_df),
     use_container_width=True,

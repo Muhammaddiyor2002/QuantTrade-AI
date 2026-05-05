@@ -91,6 +91,7 @@ class BacktestEngine:
         entry_price = 0.0
         entry_time: pd.Timestamp | None = None
         entry_idx = 0
+        entry_commission = 0.0
         cur_dir = 0
         trades: list[Trade] = []
         commission_rate = self.config.commission_bps / 10_000.0
@@ -107,9 +108,10 @@ class BacktestEngine:
                     fill = _apply_costs(
                         price, -cur_dir, commission_rate * 10_000, self.config.slippage_bps
                     )
-                    commission = abs(qty) * fill * commission_rate
-                    cash += qty * fill - commission
-                    pnl = (fill - entry_price) * qty
+                    exit_commission = abs(qty) * fill * commission_rate
+                    cash += qty * fill - exit_commission
+                    gross_pnl = (fill - entry_price) * qty
+                    total_commission = entry_commission + exit_commission
                     trade = Trade(
                         entry_time=entry_time or df.index[entry_idx],
                         exit_time=df.index[i],
@@ -117,15 +119,16 @@ class BacktestEngine:
                         entry_price=entry_price,
                         exit_price=fill,
                         quantity=qty,
-                        pnl=float(pnl - commission),
+                        pnl=float(gross_pnl - total_commission),
                         pnl_pct=float((fill / entry_price - 1.0) * cur_dir) if entry_price else 0.0,
-                        commission=float(commission),
+                        commission=float(total_commission),
                         slippage=0.0,
                         bars_held=int(i - entry_idx),
                     )
                     trades.append(trade)
                     qty = 0.0
                     cur_dir = 0
+                    entry_commission = 0.0
 
                 # Open new position
                 if desired != 0:
@@ -134,8 +137,8 @@ class BacktestEngine:
                     )
                     notional = cash * self.config.fraction
                     qty = (notional / fill) * desired if fill > 0 else 0.0
-                    commission = abs(qty) * fill * commission_rate
-                    cash -= qty * fill + commission
+                    entry_commission = abs(qty) * fill * commission_rate
+                    cash -= qty * fill + entry_commission
                     entry_price = fill
                     entry_time = df.index[i]
                     entry_idx = i
@@ -147,9 +150,10 @@ class BacktestEngine:
         # Force-close any open position at the last bar's close
         if cur_dir != 0 and qty != 0.0:
             fill = _apply_costs(closes[-1], -cur_dir, 0.0, self.config.slippage_bps)
-            commission = abs(qty) * fill * commission_rate
-            cash += qty * fill - commission
-            pnl = (fill - entry_price) * qty
+            exit_commission = abs(qty) * fill * commission_rate
+            cash += qty * fill - exit_commission
+            gross_pnl = (fill - entry_price) * qty
+            total_commission = entry_commission + exit_commission
             trades.append(
                 Trade(
                     entry_time=entry_time or df.index[entry_idx],
@@ -158,9 +162,9 @@ class BacktestEngine:
                     entry_price=entry_price,
                     exit_price=fill,
                     quantity=qty,
-                    pnl=float(pnl - commission),
+                    pnl=float(gross_pnl - total_commission),
                     pnl_pct=float((fill / entry_price - 1.0) * cur_dir) if entry_price else 0.0,
-                    commission=float(commission),
+                    commission=float(total_commission),
                     slippage=0.0,
                     bars_held=int(n - 1 - entry_idx),
                 )

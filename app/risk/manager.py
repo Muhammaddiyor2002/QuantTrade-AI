@@ -100,8 +100,6 @@ def apply_stops_and_targets(
     entry_price = 0.0
     sl = tp = 0.0
     for i in range(len(df)):
-        target = int(new_pos[i])
-
         if cur != 0 and (highs[i] >= max(sl, tp) or lows[i] <= min(sl, tp)):
             if cur == 1:
                 if lows[i] <= sl or highs[i] >= tp:
@@ -112,6 +110,9 @@ def apply_stops_and_targets(
                     new_pos[i:] = np.where(new_pos[i:] == -1, 0, new_pos[i:])
                     cur = 0
 
+        # Re-read target after a stop may have flattened this bar's position so
+        # a fresh re-entry doesn't fire on the very same bar that the stop hit.
+        target = int(new_pos[i])
         if target != cur and target != 0:
             entry_price = closes[i]
             if cfg.use_atr_stops and atr_series[i] > 0:

@@ -48,6 +48,35 @@ def test_apply_stops_keeps_signal_in_range(ohlcv_medium: pd.DataFrame) -> None:
     assert risked.position.isin([-1, 0, 1]).all()
 
 
+def test_apply_stops_does_not_immediately_reenter() -> None:
+    """A tight stop on a downward bar should flatten the position and NOT
+    re-enter on the same bar (regression for stale-target re-entry bug)."""
+    import numpy as np
+    import pandas as pd
+
+    from app.strategies.base import Signals
+
+    idx = pd.date_range("2024-01-01", periods=5, freq="1h")
+    # Bar 0: setup; Bar 1: long entry; Bar 2: deep gap-down stop hit;
+    # Bars 3-4: signal still long but stop has flattened.
+    df = pd.DataFrame(
+        {
+            "open": [100.0, 100.0, 80.0, 80.0, 80.0],
+            "high": [101.0, 101.0, 80.5, 80.5, 80.5],
+            "low": [99.0, 99.0, 79.5, 79.5, 79.5],
+            "close": [100.0, 100.0, 80.0, 80.0, 80.0],
+            "volume": [1, 1, 1, 1, 1],
+        },
+        index=idx,
+    )
+    raw = Signals(position=pd.Series([0, 1, 1, 1, 1], index=idx))
+    risked = apply_stops_and_targets(df, raw, RiskConfig(stop_loss_pct=0.05))
+    # On bar 2 the 5% stop fires; the bug would re-open immediately. Assert
+    # that position[2:] is flattened (or at least not reverted to 1 on bar 2).
+    assert int(risked.position.iloc[2]) == 0
+    assert np.array_equal(risked.position.values, np.array([0, 1, 0, 0, 0]))
+
+
 def test_var_cvar(ohlcv_medium: pd.DataFrame) -> None:
     rets = ohlcv_medium["close"].pct_change().dropna()
     v = var_historical(rets, 0.05)
