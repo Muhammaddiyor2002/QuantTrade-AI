@@ -1,0 +1,89 @@
+[project]
+name = "quanttrade-ai"
+version = "0.1.0"
+description = "QuantTrade AI — production-grade AI trading + backtesting platform (Python, ML, Backtrader, Streamlit)"
+requires-python = ">=3.11"
+authors = [{ name = "Muhammaddiyor Tolibjonov", email = "mtd.coder@gmail.com" }]
+readme = "README.md"
+license = { text = "MIT" }
+keywords = ["quant", "trading", "backtesting", "ml", "xgboost", "ccxt", "streamlit"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["build", "dist", ".venv", "data_cache", "artifacts"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",            # pycodestyle / pyflakes
+    "I",                      # isort
+    "B",                      # bugbear
+    "C4",                     # comprehensions
+    "UP",                     # pyupgrade
+    "N",                      # naming
+    "S",                      # bandit-lite
+    "RUF",                    # ruff
+]
+ignore = [
+    "E501",                   # line length (handled by formatter)
+    "S101",                   # asserts (allowed in tests)
+    "S301",                   # pickle (used for model artifacts)
+    "S311",                   # non-crypto random
+    "S403",                   # pickle import
+    "S404",                   # subprocess import
+    "B008",                   # default arg call (FastAPI/Click idiom)
+    "B904",                   # raise without `from`
+    "N803", "N806",           # math/quant naming (X, y, df, etc.)
+    "RUF012",                 # mutable defaults on classes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S101", "S105", "S106", "S311", "N802"]
+"scripts/**/*" = ["S101", "T201"]
+"app/dashboard/**/*" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = ["build/", ".venv/", "data_cache/", "artifacts/"]
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py", "*_tests.py"]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow",
+    "network: marks tests that require network access",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+omit = ["app/dashboard/*", "app/api/*", "*/tests/*"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 60
