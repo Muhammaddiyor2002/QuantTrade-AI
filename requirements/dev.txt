@@ -1,0 +1,17 @@
+-r base.txt
+
+# Testing
+pytest>=7.4,<9.0
+pytest-cov>=4.1,<7.0
+pytest-asyncio>=0.23,<1.0
+hypothesis>=6.92,<7.0
+httpx>=0.26,<1.0  # FastAPI TestClient backend
+
+# Lint / format / types
+ruff==0.7.4
+mypy>=1.8,<2.0
+types-PyYAML
+types-requests
+
+# Pre-commit
+pre-commit>=3.6,<5.0

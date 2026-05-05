@@ -1,0 +1,27 @@
+services:
+  dashboard:
+    build: .
+    image: quanttrade-ai:latest
+    container_name: quanttrade-dashboard
+    command: streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data_cache:/app/data_cache
+      - ./artifacts:/app/artifacts
+
+  api:
+    image: quanttrade-ai:latest
+    container_name: quanttrade-api
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - dashboard
+    volumes:
+      - ./data_cache:/app/data_cache
+      - ./artifacts:/app/artifacts
